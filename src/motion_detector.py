@@ -3,6 +3,8 @@ import numpy as np
 import logging
 import time
 from config import Config
+from events import Event
+from datetime import datetime
 
 # motion + optical flow
 class MotionDetector:
@@ -68,14 +70,19 @@ class MotionDetector:
         
         return dilatation_dst
     
-    def detect_motion(self, det_roi: np.ndarray) -> bool:
+    def detect_motion(self, det_roi: np.ndarray) -> Event | None:
         motion_level = np.count_nonzero(det_roi) 
         if motion_level > self.motion_threshold:
             self.last_motion_time = time.time()
             logging.debug(f'Motion Level {motion_level}')
             logging.warning('Motion Detected in ROI')
-            return True
-        return False
+            return Event(
+                type = "Motion_Detected", 
+                timestamp = datetime.now(), 
+                metadata = {
+                    "motion_level": motion_level
+                    })
+        return None
     
     def _calculate_displacement(self, prev_img: np.ndarray, cur_img: np.ndarray, points: np.ndarray) -> tuple[float, float, np.ndarray]:
         cur_points, status, err = cv.calcOpticalFlowPyrLK(
@@ -84,7 +91,7 @@ class MotionDetector:
         if status is None:
             return 0.0, 0.0, np.array([])
 
-        good_new = cur_points[status == 1] # tracking succesful
+        good_new = cur_points[status == 1] # succesful
         good_old = points[status == 1]
 
         if len(good_new) == 0:

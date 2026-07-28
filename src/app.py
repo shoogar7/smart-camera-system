@@ -5,6 +5,7 @@ from roi_manager import ROIManager
 from motion_detector import MotionDetector
 from tracker import Tracker
 from config import Config
+from events import Event
 import numpy as np
 
 # orchestration of main loop
@@ -68,7 +69,9 @@ class App:
         
     def _process_motion(self, time: float, frame: np.ndarray, prev_frame: np.ndarray, cur_frame: np.ndarray, det_roi: np.ndarray) -> np.ndarray:
         if time - self.motion_detector.last_motion_time > self.motion_detector.motion_check_time:
-            if self.motion_detector.detect_motion(det_roi):
+            event = self.motion_detector.detect_motion(det_roi)
+            
+            if event:
                 if not self.motion_detector.detect_camera_shift(prev_frame, cur_frame):
                     return self.tracker.tracking(frame)
         if time - self.motion_detector.last_drop_time > self.motion_detector.drop_check_time:
